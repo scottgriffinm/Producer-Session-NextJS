@@ -3,7 +3,23 @@ import { generate} from "random-words";
 import { speakText } from '../public/tts';
 import styles from '../styles/Home.module.css';
 
+// --------------------------------------------------------------
+// index.js
+// --------------------------------------------------------------
+//   Session variables
+//   Helper functions
+//   React hooks
+//   Speech recognition functions
+//   Handle user message and query bot
+//   Other functions
+//   DOM structure
+//   Blob gradient animation
+// --------------------------------------------------------------
+
 export default function Home() {
+// --------------------------------------------------------------
+// Session variables
+// --------------------------------------------------------------
   const [displayedText, setDisplayedText] = useState(''); // State for the text currently displayed
   const [isUserTurn, setIsUserTurn] = useState(true);
   const recognitionRef = useRef(null);
@@ -12,10 +28,11 @@ export default function Home() {
   const isFirstRecognition = useRef(true); // Flag to check if it's the first recognition of the user's turn
   const blobRefs = useRef([]);
   const blobs = useRef([]);
-
-  // Sentence starter list with a sort weighting of responses (for non-banter responses)
   const sentenceStarters = ['ok, ', 'alright, ', 'ok, ', 'alright, ', 'heard, ', 'gotcha, ', 'gotcha, ',  '', ''];
 
+// --------------------------------------------------------------
+// Helper functions
+// --------------------------------------------------------------
 
   function getRandomItem(arr) {
     const randomIndex = Math.floor(Math.random() * arr.length);
@@ -27,8 +44,8 @@ function capitalizeFirstLetter(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// Make a random boolean array with bias (Ex: n=5, bias=.8 -> [true, true, false, true, true])
 function getRandomBooleanArray(n, trueBias = 0.5) {
+  // Make a random boolean array with bias (Ex: n=5, bias=.8 -> [true, true, false, true, true])
   if (trueBias < 0 || trueBias > 1) {
       throw new Error("Bias must be a value between 0 and 1");
   }
@@ -45,10 +62,8 @@ function getRandomBpm(bpm) {
     while(v === 0) v = Math.random();
     return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
   }
-  // Calculate the new BPM with the normal distribution deviation
   const deviation = randomNormalDistribution() * standardDeviation;
   let newBPM = Math.round(bpm + deviation);
-  // Ensure the new BPM is within the allowed range
   if (newBPM < minBPM) newBPM = minBPM;
   if (newBPM > maxBPM) newBPM = maxBPM;
   return newBPM;
@@ -87,7 +102,7 @@ function getRandomKey(key) {
 function getRandomName() {
   //todo: test if distribution of 1/2/3/4 word sentences is uniform (should not be)
   console.log("getting random name...");
-  const wordList = generate({ min: 1, max: 4 });
+  const wordList = generate(4);
   var name = '';
   for (const word in wordList) {
     name = name + word;
@@ -106,6 +121,10 @@ function getRandomName() {
 
 // // Set an interval to run the checkVariable function every 1000ms (1 second)
 // let intervalId = setInterval(checkVariable, 1000);
+
+// --------------------------------------------------------------
+// React hooks
+// --------------------------------------------------------------
 
   useEffect(() => {
     // Initialize blobs after the component has mounted
@@ -165,8 +184,12 @@ function getRandomName() {
     }
   }, [isUserTurn]);
 
+
+// --------------------------------------------------------------
+// Speech recognition functions
+// --------------------------------------------------------------
+
   const startSpeechRecognition = () => {
-    
     console.log("Starting speech recognition...");
     if (recognitionRef.current) {
       try {
@@ -194,7 +217,6 @@ function getRandomName() {
       silenceTimerRef.current = null;
     }
   };
-
 
   const handleSpeechResult = (e) => {
     console.log("Handling speech result...");
@@ -235,6 +257,11 @@ console.log("updating displayed text...");
     console.log("handleRecognitionEnd()");
   };
 
+
+// --------------------------------------------------------------
+// Handle user message and query bot
+// --------------------------------------------------------------
+
   const handleUserMessage = async (message) => {
     console.log("handleUserMessage()");
     if (!message.trim()) {
@@ -242,10 +269,33 @@ console.log("updating displayed text...");
       setIsUserTurn(true); // Resume user's turn if message is empty
       return;
     }
-
     if (!isRecognitionActive.current) return; // Ensure message processing stops if recognition is disabled
     setIsUserTurn(false);  // Switch to Gemini's turn
     stopSpeechRecognition(); // Ensure recognition is fully stopped
+
+
+    // Direct commands parsing
+  
+    // "Stop session" -> end session and download files
+    if (message.toLowerCase().includes("stop the session")) {
+      // todo: end session
+      const endingMiddleMessages = [
+        'I saved your files to <folderName>. ',
+        'your files are saved. ' ,
+        'good work. ' ];   
+        const endingEndingMessages = [
+        'Have a good day. ',
+        'See you.',
+        'See you later.',
+        'Peace.'];
+      var speech = getRandomItem(sentenceStarters) + getRandomItem(endingMiddleMessages) + getRandomItem(endingEndingMessages);
+      speech = capitalizeFirstLetter(speech);
+      updateDisplayedText(speech, 'ai'); // Update the displayed text to Gemini's response
+      speakText(speech, () => {
+        setIsUserTurn(true); // Switch back to user turn after TTS finishes
+      });
+      return;
+    }
 
     // Prompt 1.) Determine user intent
     console.log(`message: ${message}`);
@@ -272,7 +322,7 @@ console.log("updating displayed text...");
         speakText(speech, () => {
           setIsUserTurn(true); // Switch back to user turn after TTS finishes
         });
-        return
+        return;
       }
 
       // handle intents that dont require parameters
@@ -441,6 +491,10 @@ console.log(`message with tag: ${messageWithIntentTag}`);
     }
   };
 
+
+// --------------------------------------------------------------
+// Other functions
+// --------------------------------------------------------------
   const handleError = (errorMessage) => {
     updateDisplayedText(errorMessage, 'ai'); // Update the displayed text to the error message
     speakText(errorMessage, () => {
@@ -461,6 +515,11 @@ console.log(`message with tag: ${messageWithIntentTag}`);
       setIsUserTurn(true); // Switch to user's turn immediately
     }
   };
+
+// --------------------------------------------------------------
+// DOM structure
+// --------------------------------------------------------------
+
   return (
     <div className={styles.container}>
       <div 
@@ -493,6 +552,11 @@ console.log(`message with tag: ${messageWithIntentTag}`);
     </div>
   );
 }
+
+
+// --------------------------------------------------------------
+// Blob gradient animation
+// --------------------------------------------------------------
 
 class Blob {
   constructor(el) {
